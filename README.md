@@ -51,4 +51,16 @@ class Person:
     some_choice = ex.String().enum(['Choice 1', 'Choice 2'])
 ```
 
+Or, you can validate an instance (as you'll usually need)
+
+```python
+import exodia as ex
+
+class Person(ex.Base):
+    name = ex.String().required()
+    age = ex.Integer().required().min(18)
+
+me = Person(name="name", age=12) # validation will work, throws exception
+```
+
 And more is coming, actually more is still undocumented!
