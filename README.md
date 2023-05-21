@@ -3,6 +3,14 @@
 
 This library is heavily inspired by [Yup](https://github.com/jquense/yup) & [Joi](https://joi.dev/api/?v=17.9.1) in JavaScript.
 
+## Installation
+```shell
+pip install exodia
+```
+
+
+## Examples
+
 ```python
 import exodia as ex
 
