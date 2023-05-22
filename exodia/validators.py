@@ -1,5 +1,4 @@
 from collections.abc import Mapping, Iterable
-
 from exodia import ExodiaException
 
 from exodia.utils import get_callable_params
@@ -19,6 +18,12 @@ class Validator:
 
     def __eq__(self, v):
         return isinstance(v, self.__class__)
+
+    def __add__(self, other):
+        return None
+
+    def __radd__(self, other):
+        return self + other
 
     def get_format_params(self, value):
         parameter_names = get_callable_params(self.__class__)
@@ -105,25 +110,39 @@ class Between(Validator):
 
 
 class Type(Validator):
-    generic_message = "{value} is of type {actual_type}, expected type {expected_type}"
+    generic_message = "{value} is of type {actual_type}, expected types {expected_types}"
     field_message = (
-        "{field_name}={value} is of type {actual_type}, expected type {expected_type}"
+        "{field_name}={value} is of type {actual_type}, expected types {expected_types}"
     )
 
-    def __init__(self, t):
-        assert isinstance(t, type), "{}.t must be a class".format(self.__class__.__name__)
+    def __init__(self, ts):
+        if not isinstance(ts, Iterable):
+            ts = [ts]
 
+        # a hack to support "None" as a type instead of an instance of NoneType, just for convenience
+        for i, t in enumerate(ts):
+            assert isinstance(t, type) or t is None, "{}.t must be a class".format(self.__class__.__name__)
+
+            if t is None:
+                ts[i] = type(None)
+
+        self.ts = ts
         super().__init__()
-        self.t = t
+
+    def merge(self, v):
+        return self.__class__(ts=self.ts + v.ts)
 
     def validate(self, value, field_name=None, instance=None):
-        return isinstance(value, self.t)
+        print("33333333333")
+        print(self.ts)
+        print("33333333333")
+        return isinstance(value, tuple(self.ts))
 
     def get_format_params(self, value):
         return dict(
             **super().get_format_params(value),
             actual_type=type(value).__name__,
-            expected_type=self.t.__name__,
+            expected_types=", ".join(item.__class__.__name__ for item in self.ts),
         )
 
 

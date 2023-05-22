@@ -17,6 +17,11 @@ def test_optional_field(instance):
     instance.last_name = None
 
 
+def test_optional_invalid_value(instance):
+    with pytest.raises(ex.ExodiaException):
+        instance.last_name = 2
+
+
 def test_required_field(instance):
     with pytest.raises(ex.ExodiaException):
         instance.first_name = None

@@ -6,7 +6,6 @@ class Field:
     of_type = None
 
     def __init__(self, *args, **kwargs):
-        # validator args, validator kwargs
         self._name = None
         self.args = args
         self.kwargs = kwargs
@@ -14,7 +13,7 @@ class Field:
         assert self.of_type, "of_type can't be of value None"
 
         self._validators = [
-            validators.Type(self.of_type),
+            self.get_type_validator(),
         ]
 
     def __set_name__(self, owner, name):
@@ -31,12 +30,25 @@ class Field:
 
         self._validators.append(v)
 
+    def _pop_validator(self, v: validators.Validator):
+        for i, validator in enumerate(self._validators):
+            if validator == v:
+                return self._validators.pop(i)
+
     def _has_validator(self, v):
         return v in self._validators
 
     def _run_validators(self, value, field_name=None, instance=None):
+        errors = []
+
         for validator in self._validators:
-            validator(value, field_name=field_name, instance=instance)
+            try:
+                validator(value, field_name=field_name, instance=instance)
+            except ExodiaException as e:
+                errors.append(e)
+
+        if errors:
+            raise ExodiaException(errors)
 
     def _no_validator_of_type(self, v):
         for validator in self._validators:
@@ -51,14 +63,29 @@ class Field:
     def validate(self, value):
         self._run_validators(value)
 
+    def get_type_validator(self):
+        return validators.Type(self.of_type)
+
     def optional(self):
         self._no_validator_of_type(validators.Required)
         self._add_validator(validators.Optional())
+
+        # generate an optional self.of_type validator
+        current_type_validator = self._pop_validator(self.get_type_validator())
+        OptionalTypeValidator = current_type_validator.merge(validators.Type(None))
+
+        self._add_validator(OptionalTypeValidator)
         return self
 
     def required(self):
         self._no_validator_of_type(validators.Optional)
         self._add_validator(validators.Required())
+        return self
+
+    def custom(self, v):
+        self._no_validator_of_type(v)
+        # check validity of v
+        self._add_validator(v)
         return self
 
     def enum(self, options):
