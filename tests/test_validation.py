@@ -1,17 +1,16 @@
 import pytest
 
 import exodia as ex
-import exodia.validators as exv
 
 
 def test_put_invalid_choice(instance):
     with pytest.raises(ex.ExodiaException):
-        instance.size = 'MEDIUM'
+        instance.size = "MEDIUM"
 
 
 def test_put_valid_choice(instance):
-    instance.choices = 'BIG'
-    instance.choices = 'SMALL'
+    instance.choices = "BIG"
+    instance.choices = "SMALL"
 
 
 def test_optional_field(instance):
@@ -29,32 +28,20 @@ def test_put_invalid_type(instance):
 
 
 def test_put_dict_with_all_keys(instance):
-    instance.obj = {
-        "name": "LeOndaz",
-        "age": 23
-    }
+    instance.obj = {"name": "LeOndaz", "age": 23}
 
 
 def test_put_dict_with_missing_required_key(instance):
     with pytest.raises(ex.ExodiaException):
-        instance.obj = {
-            "age": 23
-        }
+        instance.obj = {"age": 23}
 
 
 def test_put_dict_with_missing_optional_key(instance):
-    instance.obj = {
-        "name": "LeOndaz"
-    }
+    instance.obj = {"name": "LeOndaz"}
 
 
 def test_nested_object(instance):
-    instance.nested_obj = {
-        "nested": {
-            "random": "yes",
-            "age": 23
-        }
-    }
+    instance.nested_obj = {"nested": {"random": "yes", "age": 23}}
 
 
 def test_imperative_validation():

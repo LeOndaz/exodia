@@ -1,13 +1,13 @@
-
 ### EXODIA validation
 
-This library is heavily inspired by [Yup](https://github.com/jquense/yup) & [Joi](https://joi.dev/api/?v=17.9.1) in JavaScript.
+This library is heavily inspired by [Yup](https://github.com/jquense/yup) & [Joi](https://joi.dev/api/?v=17.9.1) in
+JavaScript.
 
 ## Installation
+
 ```shell
 pip install exodia
 ```
-
 
 ## Examples
 
@@ -27,7 +27,7 @@ child.first_name = 12  # throws exception
 
 child.first_name = "".join([i for i in range(250 + 1)])  # exception
 
-child.age = 12 # error, must be more than 18!
+child.age = 12  # error, must be more than 18!
 ```
 
 Not just that, wait to see the Exodia!
@@ -64,11 +64,132 @@ Or, you can validate an instance (as you'll usually need)
 ```python
 import exodia as ex
 
+
 class Person(ex.Base):
     name = ex.String().required()
     age = ex.Integer().required().min(18)
 
-me = Person(name="name", age=12) # validation will work, throws exception
+
+me = Person(name="name", age=12)  # validation will work, throws exception
 ```
 
-And more is coming, actually more is still undocumented!
+### Or, inline validation
+
+```python
+import exodia as ex
+
+
+@router.post('/cards')
+def handle_card_creation(request, body):
+    order_by = body.order_by  # can be any string
+
+    try:
+        ex.String().enum(['ASC', 'DESC']).validate(order_by)
+    except ex.ExodiaException:
+        raise BigAPIError('invalid order_by value!')
+
+```
+
+### Notice that, if you validate like this
+
+```python
+import exodia as ex
+
+
+class Person(ex.Base):
+    name = ex.String()
+
+
+Person().name = 2  # name=2 is of type int, expected type str
+```
+
+However, if you validate without a field name:
+
+```python
+import exodia as ex
+
+ex.String().validate(2)  # 2 is of type int, expected type str
+```
+
+You'll notice that the error changed, that's because of how descriptors work and all fields in the library are
+descriptors.
+
+Custom validation? Just subclass `ex.Validator` and you're good to go.
+
+```python
+import exodia as ex
+
+
+class MultipleOf5And25(ex.Validator):
+    def validate(self, value, field_name=None, instance=None):
+        """Returns a valid case"""
+        return value % 5 == 0 and value % 25 == 0
+
+
+MultipleOf5And25().validate(20)  # error
+MultipleOf5And25().validate(25)  # works
+
+```
+
+What about a custom field?
+
+```python
+from collections.abc import Callable
+import exodia as ex
+
+
+class Func(ex.Field):
+    of_type = Callable
+
+
+class Person:
+    get_full_name = Func().required()
+```
+
+And you're good to go, as expected!
+
+### What if I want only the validation
+
+```python
+from collections.abc import Callable
+from exodia import validators
+
+multiple_of_25 = validators.MultipleOf(25)
+multiple_of_25(30)  # error
+
+is_int = validators.Type(int)
+is_int("CLEARLY_NOT_INT")  # error
+
+is_callable = validators.Type(Callable)
+is_callable(is_int)  # works
+```
+
+__Note__ that there's already a `callable` function in python.
+
+You could even implement a stack of validators!
+
+```python
+import exodia as ex
+
+
+class ValidatorStack(ex.Validator):
+    def __init__(self, validators):
+        self.validators = validators
+
+    def validate(self, value, field_name=None, instance=None):
+        for validator in self.validators:
+            validator.validate(value, field_name, instance)
+
+```
+
+And use it!
+```python
+validate_multiple_of_5_and_25 = ValidatorStack(validators=[
+    ex.validators.MultipleOf(5),
+    ex.validators.MultipleOf(25),
+])
+
+validate_multiple_of_5_and_25(30)  # everything explodes
+```
+
+More is coming, actually more is still undocumented!

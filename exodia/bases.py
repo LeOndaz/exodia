@@ -8,7 +8,9 @@ class Base:
 
     def __new__(cls, *args, **kwargs):
         if cls == Base:
-            raise ex.ExodiaException("Can't instantiate Base directly, You must subclass it")
+            raise ex.ExodiaException(
+                "Can't instantiate Base directly, You must subclass it"
+            )
 
         return super().__new__(cls)
 

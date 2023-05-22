@@ -1,13 +1,5 @@
-from typing import Mapping
-
-from exodia import Field
+import inspect
 
 
-def get_field_attrs(data) -> Mapping:
-    result = {}
-
-    for key, value in data.items():
-        if isinstance(value, Field):
-            result[key] = value
-
-    return result
+def get_callable_params(c):
+    return list(inspect.signature(c).parameters.keys())

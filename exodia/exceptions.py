@@ -17,9 +17,9 @@ class ExodiaException(Exception):
                 errors += self._validate_error_mapping(value)
             else:
                 if not self._is_valid_error_value(value):
-                    errors.append({
-                        key: "value {v} is not an exception type!".format(v=v)
-                    })
+                    errors.append(
+                        {key: "value {v} is not an exception type!".format(v=v)}
+                    )
 
         return errors
 
