@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="exodia",
-    version="1.0.0",
+    version="1.0.1",
     description="A client library for validation without hassle",
     author="LeOndaz",
     author_email="ahmeddark369@gmail.com",
