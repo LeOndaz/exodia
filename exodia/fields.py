@@ -23,26 +23,33 @@ class Field:
     def _add_validator(self, v: validators.Validator):
         for validator in self._validators:
             if validator == v:
-                raise ExodiaException("You can't have multiple validators of type {t}".format(
-                    t=v.__class__.__name__,
-                ))
+                raise ExodiaException(
+                    "You can't have multiple validators of type {t}".format(
+                        t=v.__class__.__name__,
+                    )
+                )
 
         self._validators.append(v)
 
     def _has_validator(self, v):
         return v in self._validators
 
-    def run_validators(self, field_name, value, instance):
+    def _run_validators(self, value, field_name=None, instance=None):
         for validator in self._validators:
-            validator(field_name, value, instance)
+            validator(value, field_name=field_name, instance=instance)
 
     def _no_validator_of_type(self, v):
         for validator in self._validators:
             if isinstance(validator, v):
-                raise ExodiaException("Can't have validators [{v1}, {v2}] at the same time".format(
-                    v1=validator.__class__.__name__,
-                    v2=v.__name__,
-                ))
+                raise ExodiaException(
+                    "Can't have validators [{v1}, {v2}] at the same time".format(
+                        v1=validator.__class__.__name__,
+                        v2=v.__name__,
+                    )
+                )
+
+    def validate(self, value):
+        self._run_validators(value)
 
     def optional(self):
         self._no_validator_of_type(validators.Required)
@@ -59,7 +66,7 @@ class Field:
         return self
 
     def __set__(self, instance, value):
-        self.run_validators(self._name, value, instance)
+        self._run_validators(value, self._name, instance)
         instance.__dict__[self._name] = value
 
     def __get__(self, instance, owner):
@@ -83,6 +90,9 @@ class String(Field):
         self._add_validator(validators.MaxLength(value))
         return self
 
+    def not_empty(self):
+        self._add_validator(validators.NotEmpty())
+
 
 class Integer(Field):
     of_type = int
@@ -104,11 +114,8 @@ class Integer(Field):
         return self
 
 
-class List(Field):
+class List(String):
     of_type = list
-
-    def not_empty(self):
-        self._add_validator(validators.NotEmpty())
 
 
 class Func(Field):
