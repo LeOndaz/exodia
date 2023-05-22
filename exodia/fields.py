@@ -82,10 +82,8 @@ class Field:
         self._add_validator(validators.Required())
         return self
 
-    def custom(self, v):
-        self._no_validator_of_type(v)
-        # check validity of v
-        self._add_validator(v)
+    def function(self, f, message):
+        self._add_validator(validators.Function(f, message))
         return self
 
     def enum(self, options):

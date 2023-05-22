@@ -37,8 +37,11 @@ class Validator:
 
         return format_params
 
+    def get_message(self, field_name):
+        return self.field_message if field_name else self.generic_message
+
     def fail(self, field_name=None, value=None, **kw):
-        message = self.field_message if field_name else self.generic_message
+        message = self.get_message(field_name)
 
         raise ExodiaException(
             message.format(
@@ -133,9 +136,6 @@ class Type(Validator):
         return self.__class__(ts=self.ts + v.ts)
 
     def validate(self, value, field_name=None, instance=None):
-        print("33333333333")
-        print(self.ts)
-        print("33333333333")
         return isinstance(value, tuple(self.ts))
 
     def get_format_params(self, value):
@@ -259,3 +259,16 @@ class Exodia(Validator):
 
     def __call__(self, value, field_name=None, instance=None):
         self._recursive_validate_schema(value, field_name, instance)
+
+
+class Function(Validator):
+    def __init__(self, f, message):
+        self.f = f
+        self.message = message
+        super().__init__()
+
+    def get_message(self, field_name):
+        return self.message
+
+    def validate(self, value, field_name=None, instance=None):
+        return self.f(value)

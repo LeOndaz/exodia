@@ -55,3 +55,13 @@ def test_imperative_validation():
 
     with pytest.raises(ex.ExodiaException):
         ex.String().min(250).validate("STRING_LESS_THAN_250_CHARS")
+
+
+def test_custom_validation():
+    with pytest.raises(ex.ExodiaException):
+        ex.String().function(lambda v: len(v) >= 2, "value has len smaller than 2").validate("A")
+
+    # which is equivalent to
+
+    with pytest.raises(ex.ExodiaException):
+        ex.String().min(2).validate('A')
