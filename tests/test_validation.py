@@ -105,7 +105,7 @@ def test_ref():
             .required()
         )
 
-    Person(age=25, younger_brother_age=90, younger_brother_but_with_name_ref=25)
+    Person(age=25, younger_brother_age=90, younger_brother_but_with_name_ref=30)
 
     with pytest.raises(ex.ExodiaException):
         Person(age=25, younger_brother_age=20)
