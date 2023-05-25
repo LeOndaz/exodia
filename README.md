@@ -205,8 +205,15 @@ Exodia supports date/time/datetime objects as well with operators working as exp
 from datetime import datetime, date
 import exodia as ex
 
-ex.Date().before(date(year=3000, month=1, day=1)).validate(date(year=1971, month=1, day=1).isoformat())  # works
-ex.DateTime().validate(datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat())  # works
+ex.Date().before(
+    date(year=3000, month=1, day=1)
+).validate(
+    date(year=1971, month=1, day=1).isoformat()
+)  # works
+
+ex.DateTime().validate(
+    datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat()
+)  # works
 ```
 
 ### What if you have dependant fields?
