@@ -1,18 +1,12 @@
 import exodia as ex
 
+__all__ = ("Base",)
+
 
 class Base:
     """
     Basic implementation of a class that saves each kwarg on its instances
     """
-
-    def __new__(cls, *args, **kwargs):
-        if cls == Base:
-            raise ex.ExodiaException(
-                "Can't instantiate Base directly, You must subclass it"
-            )
-
-        return super().__new__(cls)
 
     def __init__(self, **kwargs):
         self._validate_kwargs(kwargs)

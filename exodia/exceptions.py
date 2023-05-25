@@ -1,5 +1,6 @@
-import json
 from typing import Any, Mapping
+
+__all__ = ("ExodiaException",)
 
 
 class ExodiaException(Exception):
