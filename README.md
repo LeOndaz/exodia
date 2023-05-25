@@ -178,11 +178,16 @@ class ValidatorStack(ex.Validator):
 
     def validate(self, value, field_name=None, instance=None):
         for validator in self.validators:
-            validator.validate(value, field_name, instance)
+            try:
+                validator.validate(value, field_name, instance)
+            except ex.ExodiaException:
+                return False
 
+        return True
 ```
 
 And use it!
+
 ```python
 validate_multiple_of_5_and_25 = ValidatorStack(validators=[
     ex.validators.MultipleOf(5),
@@ -190,6 +195,18 @@ validate_multiple_of_5_and_25 = ValidatorStack(validators=[
 ])
 
 validate_multiple_of_5_and_25(30)  # everything explodes
+```
+
+However, we do have this included as `ex.Stack`
+
+Exodia supports date/time/datetime objects as well with operators working as expected
+
+```python
+from datetime import datetime, date
+import exodia as ex
+
+ex.Date().before(date(year=3000, month=1, day=1)).validate(date(year=1971, month=1, day=1).isoformat())  # works
+ex.DateTime().validate(datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat()) # works
 ```
 
 More is coming, actually more is still undocumented!

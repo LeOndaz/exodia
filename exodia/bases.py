@@ -25,27 +25,27 @@ class Base:
 
     def _validate_kwargs(self, kwargs):
         errors = []
-        unknown_args = []
+        unknown_attrs = []
         valid_attrs = self._get_valid_attrs()
 
         for key, value in kwargs.items():
             if not valid_attrs.get(key):
-                unknown_args.append(key)
+                unknown_attrs.append(key)
 
-        for arg in unknown_args:
+        for arg in unknown_attrs:
             error = ex.ExodiaException("unexpected argument {arg}".format(arg=arg))
             errors.append(error)
 
         if errors:
             raise ex.ExodiaException(errors)
 
-        for key, value in valid_attrs.items():
-            value._run_validators(kwargs.get(key), key, self)
+        for key, field in valid_attrs.items():
+            value = kwargs.get(key)
+            field._run_validators(value, key, self)
+            self.post_field_validation(key, value)
 
-    def _set_instance_variables(self, kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def post_field_validation(self, field, value):
+        setattr(self, field, value)
 
     def __init__(self, **kwargs):
         self._validate_kwargs(kwargs)
-        self._set_instance_variables(kwargs)

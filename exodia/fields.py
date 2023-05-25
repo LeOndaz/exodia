@@ -1,8 +1,20 @@
 from collections.abc import Callable, Mapping
 from exodia import validators, ExodiaException
+from datetime import date, datetime
 
 
 class Field:
+    """
+    Represents a Field
+
+    class Person:
+        name = ex.Field()
+
+    except that you don't create Field instances, you create subclasses only.
+
+    :param of_type: represents the allowed types to be worked with during validation process
+    """
+
     of_type = None
 
     def __init__(self, *args, **kwargs):
@@ -60,11 +72,18 @@ class Field:
                     )
                 )
 
+    def prepare_for_validation(self, v):
+        return v
+
     def validate(self, value):
-        self._run_validators(value)
+        self._run_validators(self.prepare_for_validation(value))
+        return self.to_repr(value)
 
     def get_type_validator(self):
         return validators.Type(self.of_type)
+
+    def to_repr(self, v):
+        return v
 
     def optional(self):
         self._no_validator_of_type(validators.Required)
@@ -90,12 +109,16 @@ class Field:
         self._add_validator(validators.Enum(options))
         return self
 
+    def ref(self, field, expr, message=None):
+        self._add_validator(validators.Ref(field, expr, message))
+        return self
+
     def __set__(self, instance, value):
-        self._run_validators(value, self._name, instance)
-        instance.__dict__[self._name] = value
+        self._run_validators(self.prepare_for_validation(value), self._name, instance)
+        instance.__dict__[self._name] = self.to_repr(value)
 
     def __get__(self, instance, owner):
-        return self.of_type(instance.__dict__[self._name])
+        return instance.__dict__[self._name]
 
 
 class String(Field):
@@ -123,11 +146,27 @@ class Integer(Field):
     of_type = int
 
     def min(self, value: int):
-        self._add_validator(validators.MinValue(value))
+        self._add_validator(
+            validators.Stack(
+                [
+                    validators.GreaterThan(value),
+                    validators.Equal(value),
+                ]
+            )
+        )
+
         return self
 
     def max(self, value: int):
-        self._add_validator(validators.MaxValue(value))
+        self._add_validator(
+            validators.Stack(
+                [
+                    validators.LessThan(value),
+                    validators.Equal(value),
+                ]
+            )
+        )
+
         return self
 
     def between(self, min: int, max: int):
@@ -153,3 +192,44 @@ class Exodia(Field):
     def __init__(self, schema, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._add_validator(validators.Exodia(schema))
+
+
+class Date(Field):
+    of_type = [str, date]
+
+    def prepare_for_validation(self, v):
+        return date.fromisoformat(v)
+
+    def to_repr(self, v):
+        return date.fromisoformat(v)
+
+    def between(self, start: date, end: date):
+        self._add_validator(validators.Between(start, end))
+        return self
+
+    def before(self, d: date):
+        self._add_validator(validators.LessThan(d))
+        return self
+
+    def after(self, d: date):
+        self._add_validator(validators.GreaterThan(d))
+        return self
+
+
+class DateTime(Date):
+    of_type = [str, datetime]
+
+    def prepare_for_validation(self, v: str):
+        return datetime.fromisoformat(v)
+
+    def before(self, d: datetime):
+        self._add_validator(validators.LessThan(d))
+        return self
+
+    def after(self, d: datetime):
+        self._add_validator(validators.GreaterThan(d))
+        return self
+
+    def between(self, start: datetime, end: datetime):
+        self._add_validator(validators.Between(start, end))
+        return self

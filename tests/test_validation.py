@@ -1,6 +1,7 @@
 import pytest
 
 import exodia as ex
+from datetime import date
 
 
 def test_put_invalid_choice(instance):
@@ -59,9 +60,42 @@ def test_imperative_validation():
 
 def test_custom_validation():
     with pytest.raises(ex.ExodiaException):
-        ex.String().function(lambda v: len(v) >= 2, "value has len smaller than 2").validate("A")
+        ex.String().function(
+            lambda v: len(v) >= 2, "value has len smaller than 2"
+        ).validate("A")
 
     # which is equivalent to
 
     with pytest.raises(ex.ExodiaException):
-        ex.String().min(2).validate('A')
+        ex.String().min(2).validate("A")
+
+
+def test_date():
+    unix_epoch = (
+        ex.Date()
+        .after(date(year=1900, month=1, day=1))
+        .before(date(year=2000, month=1, day=1))
+        .optional()
+        .validate(date(year=1970, month=1, day=1).isoformat())
+    )
+    assert unix_epoch == date(year=1970, month=1, day=1), "invalid date in test"
+
+
+def test_cant_use_ref_without_instance():
+    with pytest.raises(ex.ExodiaException):
+        ex.String().ref("other", lambda this, other: this > other).validate("TEXT")
+
+
+def test_ref():
+    class Person(ex.Base):
+        age = ex.Integer().required()
+        younger_brother_age = (
+            ex.Integer()
+            .ref(age, lambda my_age, brother_age: my_age > brother_age, "younger_brother can't be older!")
+            .required()
+        )
+
+    Person(age=25, younger_brother_age=90)
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=25, younger_brother_age=20)

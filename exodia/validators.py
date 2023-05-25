@@ -1,4 +1,7 @@
-from collections.abc import Mapping, Iterable
+from collections.abc import Mapping, Iterable, Callable
+from datetime import date, datetime, time
+from typing import Union, List
+
 from exodia import ExodiaException
 
 from exodia.utils import get_callable_params
@@ -96,14 +99,7 @@ class Between(Validator):
     field_message = "{field_name} must be between ({min}, {max})"
     generic_message = "{value} is not between ({min}, {max})"
 
-    def __init__(self, min: int, max: int):
-        assert isinstance(min, int), "{}.min must be an instance of int".format(
-            self.__class__.__name__
-        )
-        assert isinstance(max, int), "{}.max must be an instance of int".format(
-            self.__class__.__name__
-        )
-
+    def __init__(self, min, max):
         super().__init__()
         self.min = min
         self.max = max
@@ -113,7 +109,9 @@ class Between(Validator):
 
 
 class Type(Validator):
-    generic_message = "{value} is of type {actual_type}, expected types {expected_types}"
+    generic_message = (
+        "{value} is of type {actual_type}, expected types {expected_types}"
+    )
     field_message = (
         "{field_name}={value} is of type {actual_type}, expected types {expected_types}"
     )
@@ -124,7 +122,9 @@ class Type(Validator):
 
         # a hack to support "None" as a type instead of an instance of NoneType, just for convenience
         for i, t in enumerate(ts):
-            assert isinstance(t, type) or t is None, "{}.t must be a class".format(self.__class__.__name__)
+            assert isinstance(t, type) or t is None, "{}.t must be a class".format(
+                self.__class__.__name__
+            )
 
             if t is None:
                 ts[i] = type(None)
@@ -142,7 +142,7 @@ class Type(Validator):
         return dict(
             **super().get_format_params(value),
             actual_type=type(value).__name__,
-            expected_types=", ".join(item.__class__.__name__ for item in self.ts),
+            expected_types=", ".join(item.__name__ for item in self.ts),
         )
 
 
@@ -151,7 +151,9 @@ class MultipleOf(Validator):
     field_message = "{field_name}={value} is not a multiple of {n}"
 
     def __init__(self, n):
-        assert isinstance(n, int), "{}.n must be an instance of integer".format(self.__class__.__name__)
+        assert isinstance(n, int), "{}.n must be an instance of integer".format(
+            self.__class__.__name__
+        )
 
         super().__init__()
         self.n = n
@@ -170,9 +172,9 @@ class Enum(Validator):
     generic_message = "{value} is not a valid choice, choices are {options}"
 
     def __init__(self, options):
-        assert isinstance(options, Iterable) and not isinstance(options, Mapping), (
-            "{}.options must be a tuple-like object"
-        )
+        assert isinstance(options, Iterable) and not isinstance(
+            options, Mapping
+        ), "{}.options must be a tuple-like object"
 
         self.options = options
         super().__init__()
@@ -188,7 +190,9 @@ class MinLength(Validator):
     generic_message = "{value} must have length greater than {length}"
 
     def __init__(self, length):
-        assert isinstance(length, int), "{}.length must be an instance of int".format(self.__class__.__name__)
+        assert isinstance(length, int), "{}.length must be an instance of str".format(
+            self.__class__.__name__
+        )
 
         super().__init__()
         self.length = length
@@ -202,7 +206,9 @@ class MaxLength(Validator):
     generic_message = "{value} must have length less than {l}"
 
     def __init__(self, length):
-        assert isinstance(length, int), "{}.length must be an instance of int".format(self.__class__.__name__)
+        assert isinstance(length, int), "{}.length must be an instance of str".format(
+            self.__class__.__name__
+        )
 
         super().__init__()
         self.length = length
@@ -211,39 +217,47 @@ class MaxLength(Validator):
         return len(value) <= self.length
 
 
-class MinValue(Validator):
-    field_message = (
-        "{class_name}.{field_name}={value} must have length greater than {v}"
-    )
-    generic_message = "{value} must have length greater than {v}"
+class LessThan(Validator):
+    field_message = "{class_name}.{field_name}={value} must be less than {v}"
+    generic_message = "{value} must be less than {v}"
 
     def __init__(self, v):
-        assert isinstance(v, int), "{}.length must be an instance of int".format(self.__class__.__name__)
-
         super().__init__()
         self.v = v
 
     def validate(self, value, field_name=None, instance=None):
-        return value >= self.v
+        return value < self.v
 
 
-class MaxValue(Validator):
-    generic_message = "{value} must have length greater than {v}"
-    field_message = "{class_name}{field_name}={value} must have length less than {v}"
+class Equal(Validator):
+    field_message = "{class_name}.{field_name}={value} must be equal to {v}"
+    generic_message = "{value} must be equal to {v}"
 
     def __init__(self, v):
-        assert isinstance(v, int), "{}.length must be an instance of int".format(self.__class__.__name__)
-
         super().__init__()
         self.v = v
 
     def validate(self, value, field_name=None, instance=None):
-        return self.v > value
+        return value == self.v
+
+
+class GreaterThan(Validator):
+    field_message = "{class_name}.{field_name}={value} must be greater than {v}"
+    generic_message = "{value} must be greater than {v}"
+
+    def __init__(self, v):
+        super().__init__()
+        self.v = v
+
+    def validate(self, value, field_name=None, instance=None):
+        return value > self.v
 
 
 class Exodia(Validator):
     def __init__(self, schema):
-        assert isinstance(schema, Mapping), "{}.length must be an instance of Mapping".format(self.__class__.__name__)
+        assert isinstance(
+            schema, Mapping
+        ), "{}.length must be an instance of Mapping".format(self.__class__.__name__)
 
         super().__init__()
         self.schema = schema
@@ -272,3 +286,57 @@ class Function(Validator):
 
     def validate(self, value, field_name=None, instance=None):
         return self.f(value)
+
+
+class Stack(Validator):
+    def __init__(self, validators: List[Validator]):
+        for i, validator in enumerate(validators):
+            assert isinstance(
+                validator, Validator
+            ), "validators[{}] is not ex.validators.Validator instance".format(str(i))
+
+        self.validators = validators
+        self.validator_names = list(map(lambda v: v.__class__.__name__, validators))
+
+    def validate(self, value, field_name=None, instance=None):
+        for validator in self.validators:
+            try:
+                validator(value, field_name, instance)
+            except ExodiaException:
+                return False
+
+        return True
+
+
+class Ref(Validator):
+    def __init__(self, field, expr, message=None):
+        assert isinstance(expr, Callable), "Ref.expr must be a callable"
+
+        self.message = message or "ref expression for {} returned False".format(field)
+        self.field = field
+        self.expr = expr
+
+        super().__init__()
+
+    def get_message(self, field_name):
+        return self.message
+
+    def validate(self, value, field_name=None, instance=None):
+        if instance is None:
+            raise ExodiaException("can't use Field.ref without an instance context")
+
+        if isinstance(self.field, str):
+            field_name = self.field
+        else:
+            field_name = self.field._name
+
+        if not hasattr(instance, field_name):
+            raise ExodiaException(
+                "{class_name}.{field} does not exist".format(
+                    class_name=instance.__class__.__name__,
+                    field=self.field,
+                )
+            )
+
+        # no __dict__ because validation is still running
+        return self.expr(value, instance.__dict__[field_name])
