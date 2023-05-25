@@ -117,3 +117,18 @@ def test_ref_with_string_field():
 
     with pytest.raises(ex.ExodiaException):
         Person(age=25, younger_brother=30)
+
+
+def test_validate_method():
+    class Person(ex.Base):
+        age = ex.Integer().required()
+        younger_brother_age = ex.Integer().required()
+
+        def validate(self, attrs):
+            # no need to check if age in attrs, you can't get into this step
+            # without providing both because both are required
+            # any assertion errors are transfored into ex.ExodiaException instances
+            assert attrs["age"] > attrs["younger_brother_age"]
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=25, younger_brother_age=30)

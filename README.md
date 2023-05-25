@@ -206,7 +206,62 @@ from datetime import datetime, date
 import exodia as ex
 
 ex.Date().before(date(year=3000, month=1, day=1)).validate(date(year=1971, month=1, day=1).isoformat())  # works
-ex.DateTime().validate(datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat()) # works
+ex.DateTime().validate(datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat())  # works
 ```
+
+### What if you have dependant fields?
+
+```python
+import exodia as ex
+
+
+class Person(ex.Base):
+    age = ex.Integer().required()
+    younger_brother_age = ex.Integer().required()
+
+    def validate(self, attrs):
+        # no need to check if age in attrs, you can't get into this step
+        # without providing both because both are required
+        # any assertion errors are transformed into ex.ExodiaException instances
+        assert attrs['age'] > attrs['younger_brother_age'], "PUT IN YOUR MESSAGE"
+```
+
+However, that's not the only way to do it
+
+```python
+import exodia as ex
+
+
+class Person(ex.Base):
+    age = ex.Integer().required()
+    younger_brother_age = (
+        ex.Integer()
+            .ref(
+            age,
+            lambda me, my_bro: my_bro > me, "younger brother can't be older!"
+        )
+    )
+```
+
+### OR
+
+```python
+import exodia as ex
+
+
+class Person(ex.Base):
+    younger_brother_age = (
+        ex.Integer()
+            .ref(
+            'age',
+            lambda me, my_bro: my_bro > me, "younger brother can't be older!"
+        )
+    )
+    age = ex.Integer().required()
+```
+
+Notice the quotes, we need to respect python lexing order, `age` is defined after `younger_brother_age`,
+so we can't reference it
+
 
 More is coming, actually more is still undocumented!

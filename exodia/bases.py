@@ -14,7 +14,10 @@ class Base:
 
         return super().__new__(cls)
 
-    def _get_valid_attrs(self):
+    def __init__(self, **kwargs):
+        self._validate_kwargs(kwargs)
+
+    def _get_valid_fields(self):
         result = {}
 
         for key, value in self.__class__.__dict__.items():
@@ -26,26 +29,38 @@ class Base:
     def _validate_kwargs(self, kwargs):
         errors = []
         unknown_attrs = []
-        valid_attrs = self._get_valid_attrs()
+        valid_fields = self._get_valid_fields()
+        valid_attrs = {key: kwargs.get(key) for key in valid_fields.keys()}
 
         for key, value in kwargs.items():
-            if not valid_attrs.get(key):
+            if not valid_fields.get(key):
                 unknown_attrs.append(key)
 
-        for arg in unknown_attrs:
-            error = ex.ExodiaException("unexpected argument {arg}".format(arg=arg))
+        for attr in unknown_attrs:
+            error = ex.ExodiaException("unexpected attribute {attr}".format(attr=attr))
             errors.append(error)
+
+        for key, field in valid_fields.items():
+            value = valid_attrs.get(key)
+            try:
+                field._run_validators(value, key, self)
+            except ex.ExodiaException as e:
+                errors += [e]
+
+            self.post_field_validation(key, value)
+
+        try:
+            self.validate(valid_attrs)
+        except AssertionError as e:
+            errors.append(ex.ExodiaException(*e.args))
+        except ex.ExodiaException as e:
+            errors.append(e)
 
         if errors:
             raise ex.ExodiaException(errors)
 
-        for key, field in valid_attrs.items():
-            value = kwargs.get(key)
-            field._run_validators(value, key, self)
-            self.post_field_validation(key, value)
+    def validate(self, attrs):
+        pass
 
     def post_field_validation(self, field, value):
         setattr(self, field, value)
-
-    def __init__(self, **kwargs):
-        self._validate_kwargs(kwargs)
