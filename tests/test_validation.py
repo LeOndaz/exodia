@@ -99,8 +99,13 @@ def test_ref():
             )
             .required()
         )
+        younger_brother_but_with_name_ref = (
+            ex.Integer()
+            .ref("age", lambda my_age, brother_age: my_age > brother_age)
+            .required()
+        )
 
-    Person(age=25, younger_brother_age=90)
+    Person(age=25, younger_brother_age=90, younger_brother_but_with_name_ref=25)
 
     with pytest.raises(ex.ExodiaException):
         Person(age=25, younger_brother_age=20)
