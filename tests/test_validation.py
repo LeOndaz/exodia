@@ -127,7 +127,7 @@ def test_validate_method():
         def validate(self, attrs):
             # no need to check if age in attrs, you can't get into this step
             # without providing both because both are required
-            # any assertion errors are transfored into ex.ExodiaException instances
+            # any assertion errors are transformed into ex.ExodiaException instances
             assert attrs["age"] > attrs["younger_brother_age"]
 
     with pytest.raises(ex.ExodiaException):

@@ -1,6 +1,8 @@
 from collections.abc import Callable, Mapping
-from exodia import validators, ExodiaException
 from datetime import date, datetime
+
+from exodia import ExodiaException, validators
+from exodia.utils import logger
 
 
 class Field:
@@ -86,8 +88,11 @@ class Field:
         return v
 
     def optional(self):
-        self._no_validator_of_type(validators.Required)
+        required = self._pop_validator(validators.Required())
         self._add_validator(validators.Optional())
+
+        if required:
+            logger.info("Found an optional() constraint followed by required()")
 
         # generate an optional self.of_type validator
         current_type_validator = self._pop_validator(self.get_type_validator())
@@ -97,8 +102,17 @@ class Field:
         return self
 
     def required(self):
-        self._no_validator_of_type(validators.Optional)
+        optional = self._pop_validator(validators.Optional())
+
+        if optional:
+            logger.info("Found a required() constraint followed by optional()")
+
         self._add_validator(validators.Required())
+
+        current_type_validator = self._pop_validator(self.get_type_validator())
+        RequiredTypeValidator = current_type_validator.__class__(self.of_type)
+
+        self._add_validator(RequiredTypeValidator)
         return self
 
     def function(self, f, message):
@@ -111,6 +125,13 @@ class Field:
 
     def ref(self, field, expr, message=None):
         self._add_validator(validators.Ref(field, expr, message))
+        return self
+
+    def reset(self, v):
+        self._validators = [
+            self.get_type_validator(),
+        ]
+
         return self
 
     def __set__(self, instance, value):

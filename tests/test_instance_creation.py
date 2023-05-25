@@ -1,4 +1,5 @@
 import pytest
+
 import exodia as ex
 
 
@@ -9,11 +10,12 @@ def test_same_validation_more_than_once():
             _ = ex.String().optional().optional()
 
 
-def test_required_then_optional_should_fail():
-    with pytest.raises(ex.ExodiaException):
+def test_required_then_optional():
+    constraint = ex.String().optional()
 
-        class TestClass:
-            _ = ex.String().optional().required()
+    if True:
+        # some reason to update our validator
+        constraint = constraint.required()
 
 
 def test_base_without_kwargs():
