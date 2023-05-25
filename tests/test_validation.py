@@ -94,18 +94,26 @@ def test_ref():
             ex.Integer()
             .ref(
                 age,
-                lambda my_age, brother_age: my_age > brother_age,
+                lambda younger_age, age: age > younger_age,
                 "younger_brother can't be older!",
             )
             .required()
         )
-        younger_brother_but_with_name_ref = (
+
+    Person(age=25, younger_brother_age=20)
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=25, younger_brother_age=90)
+
+
+def test_ref_with_string_field():
+    class Person(ex.Base):
+        age = ex.Integer().required()
+        younger_brother = (
             ex.Integer()
-            .ref("age", lambda my_age, brother_age: my_age > brother_age)
+            .ref("age", lambda younger_age, age: age > younger_age)
             .required()
         )
 
-    Person(age=25, younger_brother_age=90, younger_brother_but_with_name_ref=30)
-
     with pytest.raises(ex.ExodiaException):
-        Person(age=25, younger_brother_age=20)
+        Person(age=25, younger_brother=30)
