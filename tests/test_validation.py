@@ -1,7 +1,8 @@
+from datetime import date
+
 import pytest
 
 import exodia as ex
-from datetime import date
 
 
 def test_put_invalid_choice(instance):
@@ -91,7 +92,11 @@ def test_ref():
         age = ex.Integer().required()
         younger_brother_age = (
             ex.Integer()
-            .ref(age, lambda my_age, brother_age: my_age > brother_age, "younger_brother can't be older!")
+            .ref(
+                age,
+                lambda my_age, brother_age: my_age > brother_age,
+                "younger_brother can't be older!",
+            )
             .required()
         )
 
