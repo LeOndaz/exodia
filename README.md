@@ -270,5 +270,17 @@ class Person(ex.Base):
 Notice the quotes, we need to respect python lexing order, `age` is defined after `younger_brother_age`,
 so we can't reference it
 
+### Multiple value types?
+```python
+import exodia as ex
+from datetime import date
+
+class Person(ex.Base):
+    birth_date = ex.Any().of(ex.String(), ex.Date())
+
+
+Person(birth_date=date(year=1970, month=1, day=1).isoformat()) # works
+Person(birth_date="TYPE_IN_A_DATE_IN_ANY_FORMAT") # works, validates as ex.String()
+```
 
 More is coming, actually more is still undocumented!
