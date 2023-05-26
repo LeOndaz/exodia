@@ -132,3 +132,20 @@ def test_validate_method():
 
     with pytest.raises(ex.ExodiaException):
         Person(age=25, younger_brother_age=30)
+
+
+def test_any():
+    class Person(ex.Base):
+        age = ex.Any().of(ex.String(), ex.Integer())
+
+    Person(age=25)
+    Person(age="25")
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=dict())
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=type("Name", (type,), {}))
+
+    with pytest.raises(ex.ExodiaException):
+        Person(age=Exception())

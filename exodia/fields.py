@@ -23,7 +23,7 @@ class Field(typing.Generic[T]):
     :param of_type: represents the allowed types to be worked with during validation process
     """
 
-    of_type = None
+    of_type: typing.Any = None
 
     def __init__(self, *args, **kwargs):
         self._name = None
@@ -78,7 +78,7 @@ class Field(typing.Generic[T]):
                     )
                 )
 
-    def prepare_for_validation(self, v):
+    def prepare_for_validation(self, v: typing.Any) -> T:
         return v
 
     def validate(self, value) -> T:
@@ -138,7 +138,7 @@ class Field(typing.Generic[T]):
 
 
 class String(Field[str]):
-    of_type = str
+    of_type: typing.Any = str
 
     def __init__(self, length=None, **kwargs):
         super().__init__(length, **kwargs)
@@ -160,7 +160,7 @@ class String(Field[str]):
 
 
 class Integer(Field[int]):
-    of_type = int
+    of_type: typing.Any = int
 
     def min(self, value: int) -> Self:
         self._add_validator(
@@ -196,22 +196,41 @@ class Integer(Field[int]):
 
 
 class List(String, Field[typing.List]):
-    of_type = list
+    of_type: typing.Any = list
 
 
 class Func(Field[typing.Callable]):
-    of_type = Callable
+    of_type: typing.Any = Callable
 
 
 class Exodia(Field[typing.Mapping]):
-    of_type = Mapping
+    of_type: typing.Any = Mapping
 
     def __init__(self, schema, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._add_validator(validators.Exodia(schema))
 
 
-class Date(Field[date]):
+class DateTime(Field[datetime]):
+    of_type = [str, datetime]
+
+    def prepare_for_validation(self, v: str) -> datetime:
+        return datetime.fromisoformat(v)
+
+    def before(self, d: datetime) -> Self:
+        self._add_validator(validators.LessThan(d))
+        return self
+
+    def after(self, d: datetime) -> Self:
+        self._add_validator(validators.GreaterThan(d))
+        return self
+
+    def between(self, start: datetime, end: datetime) -> Self:
+        self._add_validator(validators.Between(start, end))
+        return self
+
+
+class Date(DateTime, Field[date]):
     of_type = [str, date]
 
     def prepare_for_validation(self, v) -> date:
@@ -233,20 +252,9 @@ class Date(Field[date]):
         return self
 
 
-class DateTime(Date, Field[datetime]):
-    of_type = [str, datetime]
+class Any(Field[T]):
+    of_type = object
 
-    def prepare_for_validation(self, v: str) -> datetime:
-        return datetime.fromisoformat(v)
-
-    def before(self, d: datetime) -> Self:
-        self._add_validator(validators.LessThan(d))
-        return self
-
-    def after(self, d: datetime) -> Self:
-        self._add_validator(validators.GreaterThan(d))
-        return self
-
-    def between(self, start: datetime, end: datetime) -> Self:
-        self._add_validator(validators.Between(start, end))
+    def of(self, *fields) -> Self:
+        self._add_validator(validators.Any(fields))
         return self

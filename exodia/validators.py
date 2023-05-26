@@ -1,3 +1,4 @@
+import contextlib
 from collections.abc import Callable, Iterable, Mapping
 from typing import List
 
@@ -23,6 +24,7 @@ __all__ = (
     "Function",
     "Ref",
     "MultipleOf",
+    "Any",
 )
 
 
@@ -308,7 +310,7 @@ class Function(Validator):
 
 
 class Stack(Validator):
-    def __init__(self, validators: List[Validator]):
+    def __init__(self, validators: Iterable[Validator]):
         for i, validator in enumerate(validators):
             assert isinstance(
                 validator, Validator
@@ -359,3 +361,29 @@ class Ref(Validator):
 
         # no __dict__ because validation is still running
         return self.expr(value, instance.__dict__[field_name])
+
+
+class Any(Validator):
+    def __init__(self, fields):
+        self.fields = fields
+        super().__init__()
+
+    def validate(self, value, field_name=None, instance=None):
+        for field in self.fields:
+            try:
+                field._run_validators(value, field_name, instance)
+                return True
+            except ExodiaException:
+                continue
+
+        return False
+
+    def get_message(self, field_name):
+        fields = ", ".join(cls.__class__.__qualname__ for cls in self.fields)
+
+        if field_name:
+            return "{field_name} not of types ({fields})".format(
+                field_name=field_name, fields=fields
+            )
+
+        return "value not of types ({})".format(fields)
