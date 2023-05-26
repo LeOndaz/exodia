@@ -71,7 +71,7 @@ def test_custom_validation():
         ex.String().min(2).validate("A")
 
 
-def test_date():
+def test_date_before_after():
     unix_epoch = (
         ex.Date()
         .after(date(year=1900, month=1, day=1))
@@ -80,6 +80,15 @@ def test_date():
         .validate(date(year=1970, month=1, day=1).isoformat())
     )
     assert unix_epoch == date(year=1970, month=1, day=1), "invalid date in test"
+
+
+def test_date_between():
+    unix_epoch = ex.Date().between(
+        date(year=1900, month=1, day=1), date(year=2000, month=1, day=1)
+    )
+
+    with pytest.raises(ex.ExodiaException):
+        unix_epoch.validate(date(year=3000, month=1, day=1))
 
 
 def test_cant_use_ref_without_instance():

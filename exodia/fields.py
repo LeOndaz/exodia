@@ -1,6 +1,7 @@
 import typing
-from collections.abc import Callable, Mapping
+from collections import abc
 from datetime import date, datetime
+from typing import Callable, Generic, Mapping, TypeVar, Union
 
 from typing_extensions import Self
 
@@ -8,10 +9,10 @@ from exodia import ExodiaException, validators
 
 __all__ = ("Field", "String", "Integer", "Func", "List", "Exodia", "Date", "DateTime")
 
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
-class Field(typing.Generic[T]):
+class Field(Generic[T]):
     """
     Represents a Field
 
@@ -23,7 +24,7 @@ class Field(typing.Generic[T]):
     :param of_type: represents the allowed types to be worked with during validation process
     """
 
-    of_type: typing.Any = None
+    of_type: Union[T, typing.List[typing.Any]] = None
 
     def __init__(self, *args, **kwargs):
         self._name = None
@@ -196,15 +197,15 @@ class Integer(Field[int]):
 
 
 class List(String, Field[typing.List]):
-    of_type: typing.Any = list
+    of_type = list
 
 
-class Func(Field[typing.Callable]):
-    of_type: typing.Any = Callable
+class Func(Field[Callable]):
+    of_type = abc.Callable
 
 
-class Exodia(Field[typing.Mapping]):
-    of_type: typing.Any = Mapping
+class Exodia(Field[Mapping]):
+    of_type = abc.Mapping
 
     def __init__(self, schema, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -214,8 +215,11 @@ class Exodia(Field[typing.Mapping]):
 class DateTime(Field[datetime]):
     of_type = [str, datetime]
 
-    def prepare_for_validation(self, v: str) -> datetime:
-        return datetime.fromisoformat(v)
+    def prepare_for_validation(self, v: Union[str, datetime]) -> datetime:
+        if isinstance(v, str):
+            return datetime.fromisoformat(v)
+
+        return v
 
     def before(self, d: datetime) -> Self:
         self._add_validator(validators.LessThan(d))
@@ -233,8 +237,11 @@ class DateTime(Field[datetime]):
 class Date(DateTime, Field[date]):
     of_type = [str, date]
 
-    def prepare_for_validation(self, v) -> date:
-        return date.fromisoformat(v)
+    def prepare_for_validation(self, v: Union[str, datetime]) -> date:
+        if isinstance(v, str):
+            return date.fromisoformat(v)
+
+        return v
 
     def to_repr(self, v) -> date:
         return date.fromisoformat(v)

@@ -205,15 +205,22 @@ Exodia supports date/time/datetime objects as well with operators working as exp
 from datetime import datetime, date
 import exodia as ex
 
-ex.Date().before(
-    date(year=3000, month=1, day=1)
-).validate(
-    date(year=1971, month=1, day=1).isoformat()
-)  # works
+unix_epoch = ex.Date().between(
+    date(year=1900, month=1, day=1), date(year=2000, month=1, day=1)
+)
 
-ex.DateTime().validate(
-    datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat()
-)  # works
+# or
+
+unix_epoch = (
+    ex.Date()
+    .after(date(year=1900, month=1, day=1))
+    .before(date(year=2000, month=1, day=1))
+    .optional()
+    .validate(date(year=1970, month=1, day=1)) # can validate string dates in ISO format as well
+)
+
+
+ex.DateTime().validate(datetime(year=1971, month=1, day=1, hour=1, minute=1, second=1).isoformat())  # works
 ```
 
 ### What if you have dependant fields?
@@ -271,16 +278,20 @@ Notice the quotes, we need to respect python lexing order, `age` is defined afte
 so we can't reference it
 
 ### Multiple value types?
+
 ```python
 import exodia as ex
 from datetime import date
+
 
 class Person(ex.Base):
     birth_date = ex.Any().of(ex.String(), ex.Date())
 
 
-Person(birth_date=date(year=1970, month=1, day=1).isoformat()) # works
-Person(birth_date="TYPE_IN_A_DATE_IN_ANY_FORMAT") # works, validates as ex.String()
+Person(birth_date=date(year=1970, month=1, day=1).isoformat())  # works
+Person(birth_date=date(year=1970, month=1, day=1))  # also works
+
+Person(birth_date="TYPE_IN_A_DATE_IN_ANY_FORMAT")  # works, validates as ex.String()
 ```
 
 More is coming, actually more is still undocumented!
